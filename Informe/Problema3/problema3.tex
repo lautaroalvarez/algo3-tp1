@@ -1,0 +1,170 @@
+\subsection{Introducci\'on}
+% Describir detalladamente el problema a resolver dando ejemplos del mismo y sus soluciónes.
+En este problema unos arque\'ologos quieren llevarse algunos tesoros, para esto tienen algunas mochilas (a lo sumo tres).
+Los tesoros tienen un peso y un valor, y el objetivo es organizar los tesoros de tal manera que el valor total de los tesoros llevados sea el m\'aximo posible.
+La dificultad radica en que la capacidad de las mochilas es limitada (podr\'ian tener distinta capacidad cada una).
+Formalmente, dada una lista de tesoros representados como una tupla $(peso, valor)$ y m enteros $K_i$ representando la capacidad m\'axima de las mochilas (0 $<$ m $\leq$ 3),
+se piden $m$ listas de tesoros tales que la sumatoria de los pesos de la $i$-\'esima lista sea menor o igual a $K_i$
+y que la sumatoria de los valores de todos los tesoros de las $m$ listas sea el m\'aximo posible.
+
+\subsection{Resoluci\'on}
+%2. Explicar de forma clara, sencilla, estructurada y concisa, las ideas desarrolladas para la resoluci´on
+%del problema. Para esto se pide utilizar pseudoc´odigo y lenguaje coloquial combinando adecua
+%damente ambas herramientas (¡sin usar c´odigo fuente!). Se debe tambi´en justificar por qu´e el
+%procedimiento desarrollado resuelve efectivamente el problema.
+Este problema claramente es muy similar al \emph{knapsack problem}, pero con la variante de que hay varias mochilas para rellenar. \\
+La t\'ecnica algor\'itmica utilizada es programaci\'on din\'amica. Podemos utilizar dicha t\'ecnica algor\'itmica porque se cumple el principio de optimalidad, dado que si tomo una secuencia $s$ de las decisiones que tom\'e sobre una subsecuencia de objeto cualesquiera (la decisi\'on trata sobre si lo puse en alguna mochila o no y en tal caso en cual coloqu\'e ese tesoro) tal que sea \'optima para nuestro problema. Entonces si a $s$ le quito la decisi\'on para el \'ultimo objeto esta subsecuencia de $s$ es \'optima para el problema con la capacidad de la mochila (correspondiente seg\'un mi decisi\'on) reducida en el peso del \'ultimo objeto. Notar que si esto no fuera as\'i, es decir que existiera una mejor soluci\'on para el problema con los objetos de la subsecuencia, entonces tambi\'en lo ser\'ia para todos los objetos ($s$). Como no asum\'i nada sobre $s$ esto se cumple cuando $s$ es la lista de tesoros.\\
+La funci\'on recursiva que devuelve el valor m\'aximo posible, nosotros la
+definimos as\'i: \\
+
+\begin{equation*}
+     max\_profit(i,m1,m2,m3) = \left\{
+	       \begin{array}{ll}
+		 0      & \mathrm{si\ } i < 0 \\
+		 max( \\
+		 peso(i) \leq m1 * (valor(i)+max\_profit(i-1,m1-peso(i),m2,m3)), \\
+         peso(i) \leq m2 * (valor(i)+max\_profit(i-1,m1,m2-peso(i),m3)), \\
+         peso(i) \leq m3 * 
+         (valor(i)+max\_profit(i-1,m1,m2,m3-peso(i))), \\
+         max\_profit(i-1,m1,m2,m3)\\
+         ) & \mathrm{si no\ }  \\
+	       \end{array}
+	     \right.
+\end{equation*}
+
+Vamos a explicar esta funci\'on, el primer par\'ametro es el \'indice de la lista de tesoros y
+los demas son los respectivas capacidades disponibles en cada mochila. Sabemos que formalmente la funci\'on deber\'ia tener como par\'ametro la lista
+tesoros pero para simplificar hicimos ese abuso de notaci\'on. Tambi\'en se pide que el lector asuma definidas las funciones \"peso\"
+y \"valor\" que devuelven respectivamente el peso y el valor del tesoro $i$-\'esimo de la lista.
+Esta funci\'on en el caso base se fija si puede colocar el tesoro en alguna mochila y en ese caso devuelve el valor, si no lo puede colocar
+devuelve 0. En el caso recursivo la funci\'on se fija el m\'aximo de cuatro casos. \'Estos son: coloco el objeto en la mochila 1, lo coloco en la 2, lo coloco en la 3 o no lo coloco en ninguna.
+Notar que $f$ tambi\'en sirve en los casos en los que hay 1 o dos mochilas, sencillamente se ponen la capacidades en 0. \\
+Como este algoritmo es de programaci\'on din\'amica adem\'as de definir la funci\'on recursiva tengo que decidir como voy a implementar la parte de la memoizaci\'on.
+Los resultados parciales me los voy a guardar en una \"matriz\" que va a tener una dimensi\'on con los \'indices de cada tesoro y una dimensi\'on por cada mochila con las capacidades parciales posibles, es decir desde cero hasta la capacidad m\'axima de cada mochila.
+En cada posici\'on de esta matriz voy a guardarme el beneficio m\'aximo con esas capacidades y la lista de tesoros desde cero hasta $i$ como as\'i tambi\'en desde que posici\'on de la matriz llegu\'e a ese m\'aximo.
+Es decir, con cual de los 4 casos del max de max\_ profit obtuve dicho m\'aximo.
+Nuestro algoritmo toma la entrada y hace una lista de tesoros. Luego calcula los beneficios parciales y el beneficio total (ver pseudoc\'odigo). Y para imprimir los tesoros colocados en cada mochila sencillamente nos situamos en el extremo de la matriz que tiene el \'ultimo objeto y las capacidades m\'aximas de las mochilas
+dado que en esa casilla est\'a beneficio acumulado. Luego con los campos hijoWeight voy \"saltando\" a otras posiciones de la matriz hasta terminar de recorrer todos los objetos.
+
+
+\subsubsection{Pseudoc\'odigo}
+Antes del pseudoc\'odigo es oportuno aclarar que cada casillero de la matriz es una tupla de:\\
+beneficio: int, \\
+mochila: int, \\
+visitado: bool, \\
+hijoWeight1: int, \\
+hijoWeight2: int, \\
+hijoWeight3 : int \\
+
+El campo mochila indica en que mochila puse el tesoro de esa posicion, los campos hijoWeight dan las \"coordenadas\" de la matriz desde donde calcule ese m\'aximo. Estos campos van a ser cruciales para imprimir la salida con el formato pedido.\\
+Decidimos realizar dos implementaciones, una \emph{top down} o recursivo y la otra \emph{bottom up} o iterativa.
+
+\subsubsection{Top down}
+\medskip
+
+\SetAlgoLined
+\SetKwProg{Fn}{Function}{:}{EndFunction}
+\begin{algorithm}[H]
+	\label{algo: pseudocodigo_ej3}
+	\Fn{knasack(matriz: Casilla[][][][], tesoros: lista(int,int), i: int, weight1: int, weight2: int, weight3: int)}{
+		\BlankLine
+		\If{$i < 0$}{
+			return 0
+		}
+		\BlankLine
+    \If{visite matriz[i][wieght1][weight2][weight3]}{
+      return matriz[i][wieght1][weight2][weight3].beneficio
+    }
+    \Else{
+      beneficios[4]\\
+      \If{tesoros[i] entra en la mochila 1}{
+        $beneficios[0] = valor(i) + knapsack(matriz, tesoros, i-1, weight1-peso(i), weight2, weight3)$
+      }
+      \If{tesoros[i] entra en la mochila 2}{
+        $beneficios[1] = valor(i) + knapsack(matriz, tesoros, i-1, weight1, weight2-peso(i), weight3)$
+      }
+      \If{tesoros[i] entra en la mochila 3}{
+        $beneficios[2] = valor(i) + knapsack(matriz, tesoros, i-1, weight1, weight2, weight3-peso(i))$
+      }
+      $beneficios[3] = knapsack(matriz, tesoros, i-1, weight1, weight2, weight3)$
+
+      $indMax \gets indiceDelMaximo(beneficios)$
+
+      actualizar la posicion matriz[i][weight1][weight2][weight3] segun indMax
+
+      return matriz[i][wieght1][weight2][weight3].beneficio
+    }
+		\BlankLine
+	}
+	\caption{Función encargada de devolver el beneficio maximo y de poner valores en la matriz para luego imprimir los tesoros correspondientes a cada mochila}
+\end{algorithm}
+
+\medskip
+
+Es f\'acil ver que knapsack computa la funci\'on max\_profit.
+En esta implementaci\'on no necesariamente se calculan todas las posiciones de la matriz sino a\'olamente las que son necesarias.
+
+\subsubsection{Bottom up}
+
+\medskip
+
+\SetAlgoLined
+\SetKwProg{Fn}{Function}{:}{EndFunction}
+\begin{algorithm}[H]
+	\label{algo: pseudocodigo_ej3}
+	\Fn{knasack(matriz: Casilla[][][][], tesoros: lista(int,int), weight1: int, weight2: int, weight3: int)}{
+		\BlankLine
+	  \For {cada tesoro}{
+	    \For{j desde 0 hasta weight1 inclusive}{
+	        \For{k desde 0 hasta weight2 inclusive}{
+	            \For{k desde 0 hasta weight3 inclusive}{
+	               actual $\gets$ tesoro[i] \\
+	               beneficios[4]\\
+	               \If{actual entra en la mochila 1}{
+                   $beneficios[0] = actual.valor+ matriz[i-1][weight1-actual.peso][weight2][weight3]$
+                   }
+                   \If{actual entra en la mochila 2}{
+                   $beneficios[1] = actual.valor + matriz[i-1][weight1][weight2-actual.peso][weight3])$
+                   }
+                   \If{actual entra en la mochila 3}{
+                    $beneficios[2] = actual.valor + matriz[i-1][weight1][weight2][weight3-actual.peso]$
+                   }
+                    $beneficios[3] = matriz[i-1][weight1][weight2][weight3])$
+                    $indMax \gets indiceDelMaximo(beneficios)$
+
+                    actualizar la posicion actual de matriz segun indMax
+                }
+            }
+	    }
+	}
+	
+
+    return matriz[longitud(tesoros)][pesos[0]][pesos[1]][pesos[3]].beneficio
+	\BlankLine
+	}
+	
+	\caption{Función encargada de devolver el beneficio m\'aximo y de poner valores en la matriz para luego imprimir los tesoros correspondientes a cada mochila}
+\end{algorithm}
+
+\medskip
+
+En esta versi\'on de la soluci''on se puede ver que el cuerpo del ciclo \emph{for} central (es decir, desde la l\'inea 6 hasta la 18) que son muy similares a las de la implementaci\'on top down. En dichas l\'ineas se encuentra la parte de decisi\'on de que es lo conveniente para lograr el beneficio m\'aximo porque computa la funci\'on $max\_profit$. La \'unica diferencia radica en que se llenan todas las posiciones de la matriz en orden.
+
+
+\subsection{Cota de Complejidad}
+%3. Deducir una cota de complejidad temporal del algoritmo propuesto (en funci´on de los par´ametros
+%que se consideren correctos) y justificar por qu´e el algoritmo desarrollado para la resoluci´on del
+%problema cumple la cota dada. Utilizar el modelo uniforme salvo que se explicite lo contrario.
+
+\begin{itemize}
+    \item Bottom up: Primero veamos el cuerpo del ciclo \'ultimo ciclo for. Se crea un arreglo de longitud 4 ($O(1)$), luego se hace una asignaci\'on y cuatro condicionales cuyas guardas se evaluan en $O(1)$ (s\'olo se realizan comparaciones entre enteros) y los cuerpos de cada condicional cuestan $O(1)$ tambi\'en porque lo \'unico que se hace es acceder a una posici\'on de la matriz, una suma y una asignaci\'on. Por ende el costo del cuerpo es $O(1)$. Luego el ciclo de la l\'inea 5 iteran $O(weight3)$ veces, el de la l\'inea 4 $O(weight2)$ y los otros dos $O(weight1)$ y $O(C)$ ($C$ es la cantidad de tesoros) respectivamente. Es importante recordarle al lector que si la cantidad de mochilas no es 3, los pesos m\'aximos de las mochilas que no existen valen $0$, por lo tanto en ese caso esos ciclos costar\'ian $O(1)$. Por \'ultimo el ciclo que dice en que mochila se colocaron los tesoros es $O(C)$. Dado que todos estos ciclos est\'an anidados la complejidad resultante es $O($ $\Sigma  K_{i}^{m}*C)$, con $K_i$ el peso m\'aximo que soporta la mochila i-\'esima, $m$ la cantidad de mochilas y $C$ la cantidad de objetos. 
+    
+    \item Top down:
+    La complejidad de este algoritmo es $O($($\Sigma$ $K_{i})^m*C)$ donde $K_i$ es la capacidad de cada mochila, $m$ es la cantidad de mochilas y $C$ es la cantidad total de tesoros. Notar que cuando hay menos de tres mochilas los arreglos \"interiores\" tienen longitud 1, por ende no empeoran la complejidad.\\
+    Nuestra justificaci\'on se basa en que necesitamos inicializar nuestro objeto Casilla de la matriz antes de llamar a la funci\'on knapsack. Eso tiene un costo de $O($($\Sigma$ $K_{i})^m*C)$. \\
+    Luego cuando se llama a la funci\'on knapsack tambi\'en es $O($($\Sigma$ $K_{i})^m*C)$, dado que todos los llamados recursivos se guardan en la matriz. Entonces en el peor caso knapsack llena la matriz.
+    Por \'ultimo el ciclo que dice en que mochila se colocaron los tesoros es $O(C)$. En las l\'ineas 2-22 se realizan varias asignaciones, accesos a posiciones de la matriz, comparaciones de enteros. Todas estas operaciones cuestan $O(1)$.
+    
+\end{itemize}
+
+
